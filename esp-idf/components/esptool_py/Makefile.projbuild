@@ -40,6 +40,7 @@ endif
 endif
 
 ESPTOOLPY_WRITE_FLASH=$(ESPTOOLPY_SERIAL) write_flash $(if $(CONFIG_ESPTOOLPY_COMPRESSED),-z,-u) $(ESPTOOL_WRITE_FLASH_OPTIONS)
+ESPTOOLPY_READ_FLASH=$(ESPTOOLPY_SERIAL) read_flash 
 
 ESPTOOL_ALL_FLASH_ARGS += $(APP_OFFSET) $(APP_BIN)
 
@@ -68,6 +69,21 @@ endif
 app-flash: $(APP_BIN) $(ESPTOOLPY_SRC) $(call prereq_if_explicit,erase_flash) partition_table_get_info | check_python_dependencies
 	@echo "Flashing app to serial port $(ESPPORT), offset $(APP_OFFSET)..."
 	$(ESPTOOLPY_WRITE_FLASH) $(APP_OFFSET) $(APP_BIN)
+
+COMP_PATH := /d/project/esp32/esp-idf/components
+ifeq ($(OS),Windows_NT)
+	MKFAT="mkfat.exe"
+else
+	MKFAT="mkfat"
+endif
+
+fatimage: $(SDKCONFIG_MAKEFILE) $(MKFAT)
+	@echo "Making fatfs image ..." $(COMP_PATH)
+	$(COMP_PATH)/mkfatfs/src/$(MKFAT) -c $(COMP_PATH)/fatfs_image/image -s $(CONFIG_FATFS_SIZE) $(BUILD_DIR_BASE)/fatfs.img -d 2
+
+flashfat: 
+	@echo "Flashing fatfs image ..."
+	$(ESPTOOLPY_WRITE_FLASH) 0x$(CONFIG_FATFS_BASE_ADDR) $(BUILD_DIR_BASE)/fatfs.img
 
 # Submodules normally added in component.mk, but can be added
 # at the project level as long as qualified path
@@ -105,4 +121,4 @@ monitor: $(call prereq_if_explicit,%flash) | check_python_dependencies
 	[ -f $(APP_ELF) ] || exit 1
 	$(MONITOR_PYTHON) $(IDF_PATH)/tools/idf_monitor.py $(MONITOR_OPTS) $(APP_ELF)
 
-.PHONY: erase_flash
+.PHONY: erase_flash fatimage $(MKFAT) flashfat
