@@ -57,6 +57,14 @@ static const char TAG[] = "FatFSImage";
 static const char drv[] = "FatFSImage";
 static WL_Flash flash;
 
+
+uint32_t esp_random(void)
+{
+    return (uint32_t)rand();
+}
+
+
+
 class FatFSImage : public Flash_Access
 {
 private:

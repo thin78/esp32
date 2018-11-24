@@ -24,6 +24,7 @@ INCLUDES = $(COMPONENT_PATH)/private \
            ${IDF_PATH}/components/esp32/include \
            ${IDF_PATH}/components/fatfs/src \
            ${IDF_PATH}/components/log/include \
+           ${IDF_PATH}/components/freertos/include \
            ${IDF_PATH}/components/nvs_flash/test_nvs_host \
            ${IDF_PATH}/components/soc/include \
            ${IDF_PATH}/components/soc/esp32/include \
@@ -38,11 +39,12 @@ OBJS = $(COMPONENT_BUILD_DIR)/mkimg.o \
        $(COMPONENT_BUILD_DIR)/argtable3.o \
        $(COMPONENT_BUILD_DIR)/ff.o \
        $(COMPONENT_BUILD_DIR)/ffsystem.o \
-       $(COMPONENT_BUILD_DIR)/ffunicode.o 
+       $(COMPONENT_BUILD_DIR)/ffunicode.o \
+       $(COMPONENT_BUILD_DIR)/esp_random.o
 
-build: $(COMPONENT_BUILD_DIR)/fatfsimage
+build: $(COMPONENT_BUILD_DIR)/mkimg
 
-$(COMPONENT_BUILD_DIR)/fatfsimage.o: $(COMPONENT_PATH)/fatfsimage.cpp
+$(COMPONENT_BUILD_DIR)/mkimg.o: $(COMPONENT_PATH)/mkimg.cpp
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(addprefix -I ,$(INCLUDES)) -c $< -o $@
 
 $(COMPONENT_BUILD_DIR)/WL_Flash.o: ${IDF_PATH}/components/wear_levelling/WL_Flash.cpp
@@ -66,9 +68,12 @@ $(COMPONENT_BUILD_DIR)/ffsystem.o: ${IDF_PATH}/components/fatfs/src/ffsystem.c
 $(COMPONENT_BUILD_DIR)/ffunicode.o: ${IDF_PATH}/components/fatfs/src/ffunicode.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(addprefix -I ,$(INCLUDES)) -c $< -o $@
 
-$(COMPONENT_BUILD_DIR)/fatfsimage: $(OBJS)
+$(COMPONENT_BUILD_DIR)/esp_random.o: ${IDF_PATH}/components/spi_flash/sim/stubs/esp32/esp_random.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(addprefix -I ,$(INCLUDES)) -c $< -o $@
+
+$(COMPONENT_BUILD_DIR)/mkimg: $(OBJS)
 	$(CXX) $(CFLAGS) $(CPPFLAGS) $(addprefix -I ,$(INCLUDES)) $(OBJS) -o $@ -lc
 	# Create dummy archive to satisfy main app build
-	echo "!<arch>" >$(COMPONENT_BUILD_DIR)/libfatfsimage.a
+	echo "!<arch>" >$(COMPONENT_BUILD_DIR)/libmkimg.a
 
 .PHONY: build

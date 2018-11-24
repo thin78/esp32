@@ -1,8 +1,8 @@
 
 
-fat: $(BUILD_DIR_BASE)/fatfsimage/fatfsimage
+fatfs: $(BUILD_DIR_BASE)/mkimg/mkimg
 	$< $(CONFIG_FATFSIMAGE_IMAGE) $(CONFIG_FATFSIMAGE_SIZE) $(CONFIG_FATFSIMAGE_SRC)
 
-fat-flash: $(BUILD_DIR_BASE)/fatfsimage/fatfsimage
+flashfatfs: $(BUILD_DIR_BASE)/mkimg/mkimg
 	$(ESPTOOLPY_WRITE_FLASH) $(CONFIG_FATFSIMAGE_OFFSET) $(CONFIG_FATFSIMAGE_IMAGE)
 
