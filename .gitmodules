@@ -1,0 +1,3 @@
+[submodule "wdev"]
+	path = wdev
+	url = https://github.com/iauther/wdev.git

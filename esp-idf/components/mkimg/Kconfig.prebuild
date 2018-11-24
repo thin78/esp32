@@ -2,14 +2,14 @@ menu "FATFSIMAGE Configuration"
 
 config FATFSIMAGE_SRC
     string "Source directory"
-    default "imagesrc"
+    default "image"
     help
         Specifies the path(s) whose contents will be copied
         to the image file.
 
 config FATFSIMAGE_SIZE
     int "Disk image size in KB"
-    default 1024
+    default 2048
     help
         Specifies the desired disk image size in KB.  Make
         sure your partition is the same size.
@@ -22,7 +22,7 @@ config FATFSIMAGE_IMAGE
 
 config FATFSIMAGE_OFFSET
     hex "FATFS partition offset"
-    default 0x2000000
+    default 0x200000
     help
         Specifies the partition offset within the flash.  This should
         be the same as the offset in your partition table.

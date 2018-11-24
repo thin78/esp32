@@ -15,8 +15,9 @@ CPPFLAGS = -D_XOPEN_SOURCE=500 \
            -include stdlib.h
 
 CFLAGS = -O0 -g
-
 CXXFLAGS = $(CFLAGS)
+
+BUILD_DIR = $(COMPONENT_PATH)/build
 
 INCLUDES = $(COMPONENT_PATH)/private \
            $(BUILD_DIR_BASE)/include \
@@ -32,48 +33,48 @@ INCLUDES = $(COMPONENT_PATH)/private \
            ${IDF_PATH}/components/wear_levelling/private_include \
            ${IDF_PATH}/components/console/argtable3
 
-OBJS = $(COMPONENT_BUILD_DIR)/mkimg.o \
-       $(COMPONENT_BUILD_DIR)/WL_Flash.o \
-       $(COMPONENT_BUILD_DIR)/crc32.o \
-       $(COMPONENT_BUILD_DIR)/crc.o \
-       $(COMPONENT_BUILD_DIR)/argtable3.o \
-       $(COMPONENT_BUILD_DIR)/ff.o \
-       $(COMPONENT_BUILD_DIR)/ffsystem.o \
-       $(COMPONENT_BUILD_DIR)/ffunicode.o \
-       $(COMPONENT_BUILD_DIR)/esp_random.o
+OBJS = $(BUILD_DIR)/mkimg.o \
+       $(BUILD_DIR)/WL_Flash.o \
+       $(BUILD_DIR)/crc32.o \
+       $(BUILD_DIR)/crc.o \
+       $(BUILD_DIR)/argtable3.o \
+       $(BUILD_DIR)/ff.o \
+       $(BUILD_DIR)/ffsystem.o \
+       $(BUILD_DIR)/ffunicode.o \
+       $(BUILD_DIR)/esp_random.o
 
-build: $(COMPONENT_BUILD_DIR)/mkimg
+build: $(BUILD_DIR)/mkimg
 
-$(COMPONENT_BUILD_DIR)/mkimg.o: $(COMPONENT_PATH)/mkimg.cpp
+$(BUILD_DIR)/mkimg.o: $(COMPONENT_PATH)/mkimg.cpp
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(addprefix -I ,$(INCLUDES)) -c $< -o $@
 
-$(COMPONENT_BUILD_DIR)/WL_Flash.o: ${IDF_PATH}/components/wear_levelling/WL_Flash.cpp
+$(BUILD_DIR)/WL_Flash.o: ${IDF_PATH}/components/wear_levelling/WL_Flash.cpp
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(addprefix -I ,$(INCLUDES)) -c $< -o $@
 
-$(COMPONENT_BUILD_DIR)/crc32.o: ${IDF_PATH}/components/wear_levelling/crc32.cpp
+$(BUILD_DIR)/crc32.o: ${IDF_PATH}/components/wear_levelling/crc32.cpp
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(addprefix -I ,$(INCLUDES)) -c $< -o $@
 
-$(COMPONENT_BUILD_DIR)/crc.o: ${IDF_PATH}/components/nvs_flash/test_nvs_host/crc.cpp
+$(BUILD_DIR)/crc.o: ${IDF_PATH}/components/nvs_flash/test_nvs_host/crc.cpp
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(addprefix -I ,$(INCLUDES)) -c $< -o $@
 
-$(COMPONENT_BUILD_DIR)/argtable3.o: ${IDF_PATH}/components/console/argtable3/argtable3.c
+$(BUILD_DIR)/argtable3.o: ${IDF_PATH}/components/console/argtable3/argtable3.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(addprefix -I ,$(INCLUDES)) -c $< -o $@
 
-$(COMPONENT_BUILD_DIR)/ff.o: ${IDF_PATH}/components/fatfs/src/ff.c
+$(BUILD_DIR)/ff.o: ${IDF_PATH}/components/fatfs/src/ff.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(addprefix -I ,$(INCLUDES)) -c $< -o $@
 
-$(COMPONENT_BUILD_DIR)/ffsystem.o: ${IDF_PATH}/components/fatfs/src/ffsystem.c
+$(BUILD_DIR)/ffsystem.o: ${IDF_PATH}/components/fatfs/src/ffsystem.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(addprefix -I ,$(INCLUDES)) -c $< -o $@
 
-$(COMPONENT_BUILD_DIR)/ffunicode.o: ${IDF_PATH}/components/fatfs/src/ffunicode.c
+$(BUILD_DIR)/ffunicode.o: ${IDF_PATH}/components/fatfs/src/ffunicode.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(addprefix -I ,$(INCLUDES)) -c $< -o $@
 
-$(COMPONENT_BUILD_DIR)/esp_random.o: ${IDF_PATH}/components/spi_flash/sim/stubs/esp32/esp_random.c
+$(BUILD_DIR)/esp_random.o: ${IDF_PATH}/components/spi_flash/sim/stubs/esp32/esp_random.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(addprefix -I ,$(INCLUDES)) -c $< -o $@
 
-$(COMPONENT_BUILD_DIR)/mkimg: $(OBJS)
+$(BUILD_DIR)/mkimg: $(OBJS)
 	$(CXX) $(CFLAGS) $(CPPFLAGS) $(addprefix -I ,$(INCLUDES)) $(OBJS) -o $@ -lc
 	# Create dummy archive to satisfy main app build
-	echo "!<arch>" >$(COMPONENT_BUILD_DIR)/libmkimg.a
+	echo "!<arch>" >$(BUILD_DIR)/libmkimg.a
 
 .PHONY: build
