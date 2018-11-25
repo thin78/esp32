@@ -14,6 +14,10 @@
 #include "diskio.h"		/* FatFs lower layer API */
 #include "ffconf.h"
 #include "ff.h"
+#include "esp_spi_flash.h"
+
+
+#define USE_SELF
 
 static ff_diskio_impl_t * s_impls[FF_VOLUMES] = { NULL };
 
@@ -58,23 +62,63 @@ void ff_diskio_register(BYTE pdrv, const ff_diskio_impl_t* discio_impl)
 
 DSTATUS ff_disk_initialize (BYTE pdrv)
 {
+    #ifdef USE_SELF
+    return RES_OK;
+    #else
     return s_impls[pdrv]->init(pdrv);
+    #endif
 }
 DSTATUS ff_disk_status (BYTE pdrv)
 {
+    #ifdef USE_SELF
+    return RES_OK;
+    #else
     return s_impls[pdrv]->status(pdrv);
+    #endif
 }
 DRESULT ff_disk_read (BYTE pdrv, BYTE* buff, DWORD sector, UINT count)
 {
+    esp_err_t r;
+    
+    #ifdef USE_SELF
+    r = spi_flash_read(OFFSET+sector*SSIZE,buff,count*SSIZE);
+    printf("spiflash r: %d\n", r);
+    return RES_OK;
+    #else
     return s_impls[pdrv]->read(pdrv, buff, sector, count);
+    #endif
 }
 DRESULT ff_disk_write (BYTE pdrv, const BYTE* buff, DWORD sector, UINT count)
 {
+    esp_err_t r;
+    
+    #ifdef USE_SELF
+    r = spi_flash_write(OFFSET+sector*SSIZE,buff,count*SSIZE);
+    printf("spiflash w: %d\n", r);
+    return RES_OK;
+    #else
     return s_impls[pdrv]->write(pdrv, buff, sector, count);
+    #endif
 }
 DRESULT ff_disk_ioctl (BYTE pdrv, BYTE cmd, void* buff)
 {
+    #ifdef USE_SELF
+    switch (cmd) {
+        case CTRL_SYNC:
+            return RES_OK;
+        case GET_SECTOR_COUNT:
+            *((DWORD *) buff) = SCOUNT;
+            return RES_OK;
+        case GET_SECTOR_SIZE:
+            *((WORD *) buff) = SSIZE;
+            return RES_OK;
+        case GET_BLOCK_SIZE:
+            return RES_ERROR;
+    }
+    return RES_OK;
+    #else
     return s_impls[pdrv]->ioctl(pdrv, cmd, buff);
+    #endif
 }
 
 DWORD get_fattime(void)

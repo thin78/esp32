@@ -39,7 +39,7 @@ typedef struct {
 typedef struct {
     DIR dir;
     long offset;
-    FF_DIR ffdir;
+    FDIR ffdir;
     FILINFO filinfo;
     struct dirent cur_dirent;
 } vfs_fat_dir_t;

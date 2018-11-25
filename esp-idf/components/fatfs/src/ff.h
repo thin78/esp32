@@ -1,8 +1,8 @@
 /*----------------------------------------------------------------------------/
-/  FatFs - Generic FAT Filesystem module  R0.13a                              /
+/  FatFs - Generic FAT Filesystem module  R0.13c                              /
 /-----------------------------------------------------------------------------/
 /
-/ Copyright (C) 2017, ChaN, all right reserved.
+/ Copyright (C) 2018, ChaN, all right reserved.
 /
 / FatFs module is an open source software. Redistribution and use of FatFs in
 / source and binary forms, with or without modification, are permitted provided
@@ -20,7 +20,7 @@
 
 
 #ifndef FF_DEFINED
-#define FF_DEFINED	89352	/* Revision ID */
+#define FF_DEFINED	86604	/* Revision ID */
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,11 +33,6 @@ extern "C" {
 #error Wrong configuration file (ffconf.h).
 #endif
 
-#ifdef FF_DEFINE_DIR
-#define FF_DIR DIR
-#endif
-
-
 /* Definitions of volume management */
 
 #if FF_MULTI_PARTITION		/* Multiple partition configuration */
@@ -46,6 +41,12 @@ typedef struct {
 	BYTE pt;	/* Partition: 0:Auto detect, 1-4:Forced partition) */
 } PARTITION;
 extern PARTITION VolToPart[];	/* Volume - Partition resolution table */
+#endif
+
+#if FF_STR_VOLUME_ID
+#ifndef FF_VOLUME_STRS
+extern const char* VolumeStr[FF_VOLUMES];	/* User defied volume ID */
+#endif
 #endif
 
 
@@ -63,7 +64,11 @@ typedef WCHAR TCHAR;
 typedef char TCHAR;
 #define _T(x) u8 ## x
 #define _TEXT(x) u8 ## x
-#elif FF_USE_LFN && (FF_LFN_UNICODE < 0 || FF_LFN_UNICODE > 2)
+#elif FF_USE_LFN && FF_LFN_UNICODE == 3	/* Unicode in UTF-32 encoding */
+typedef DWORD TCHAR;
+#define _T(x) U ## x
+#define _TEXT(x) U ## x
+#elif FF_USE_LFN && (FF_LFN_UNICODE < 0 || FF_LFN_UNICODE > 3)
 #error Wrong FF_LFN_UNICODE setting
 #else									/* ANSI/OEM code in SBCS/DBCS */
 typedef char TCHAR;
@@ -78,6 +83,9 @@ typedef char TCHAR;
 /* Type of file size variables */
 
 #if FF_FS_EXFAT
+#if FF_INTDEF != 2
+#error exFAT feature wants C99 or later
+#endif
 typedef QWORD FSIZE_t;
 #else
 typedef DWORD FSIZE_t;
@@ -88,8 +96,8 @@ typedef DWORD FSIZE_t;
 /* Filesystem object structure (FATFS) */
 
 typedef struct {
-	BYTE	fs_type;		/* Filesystem type (0:N/A) */
-	BYTE	pdrv;			/* Physical drive number */
+	BYTE	fs_type;		/* Filesystem type (0:not mounted) */
+	BYTE	pdrv;			/* Associated physical drive */
 	BYTE	n_fats;			/* Number of FATs (1 or 2) */
 	BYTE	wflag;			/* win[] flag (b0:dirty) */
 	BYTE	fsi_flag;		/* FSINFO flags (b7:disabled, b0:dirty) */
@@ -126,6 +134,9 @@ typedef struct {
 	DWORD	fatbase;		/* FAT base sector */
 	DWORD	dirbase;		/* Root directory base sector/cluster */
 	DWORD	database;		/* Data base sector */
+#if FF_FS_EXFAT
+	DWORD	bitbase;		/* Allocation bitmap base sector */
+#endif
 	DWORD	winsect;		/* Current sector appearing in the win[] */
 	BYTE	win[FF_MAX_SS];	/* Disk access window for Directory, FAT (and file data at tiny cfg) */
 } FATFS;
@@ -138,7 +149,7 @@ typedef struct {
 	FATFS*	fs;				/* Pointer to the hosting volume of this object */
 	WORD	id;				/* Hosting volume mount ID */
 	BYTE	attr;			/* Object attribute */
-	BYTE	stat;			/* Object chain status (b1-0: =0:not contiguous, =2:contiguous, =3:flagmented in this session, b2:sub-directory stretched) */
+	BYTE	stat;			/* Object chain status (b1-0: =0:not contiguous, =2:contiguous, =3:fragmented in this session, b2:sub-directory stretched) */
 	DWORD	sclust;			/* Object data start cluster (0:no cluster or root directory) */
 	FSIZE_t	objsize;		/* Object size (valid when sclust != 0) */
 #if FF_FS_EXFAT
@@ -178,7 +189,7 @@ typedef struct {
 
 
 
-/* Directory object structure (FF_DIR) */
+/* Directory object structure (FDIR) */
 
 typedef struct {
 	FFOBJID	obj;			/* Object identifier */
@@ -193,7 +204,7 @@ typedef struct {
 #if FF_USE_FIND
 	const TCHAR* pat;		/* Pointer to the name matching pattern */
 #endif
-} FF_DIR;
+} FDIR;
 
 
 
@@ -236,7 +247,7 @@ typedef enum {
 	FR_LOCKED,				/* (16) The operation is rejected according to the file sharing policy */
 	FR_NOT_ENOUGH_CORE,		/* (17) LFN working buffer could not be allocated */
 	FR_TOO_MANY_OPEN_FILES,	/* (18) Number of open files > FF_FS_LOCK */
-	FR_INVALID_PARAMETER	/* (19) Given parameter is invalid */
+	FR_INVALID_PARAMETER,	/* (19) Given parameter is invalid */
 } FRESULT;
 
 
@@ -251,11 +262,11 @@ FRESULT f_write (FIL* fp, const void* buff, UINT btw, UINT* bw);	/* Write data t
 FRESULT f_lseek (FIL* fp, FSIZE_t ofs);								/* Move file pointer of the file object */
 FRESULT f_truncate (FIL* fp);										/* Truncate the file */
 FRESULT f_sync (FIL* fp);											/* Flush cached data of the writing file */
-FRESULT f_opendir (FF_DIR* dp, const TCHAR* path);						/* Open a directory */
-FRESULT f_closedir (FF_DIR* dp);										/* Close an open directory */
-FRESULT f_readdir (FF_DIR* dp, FILINFO* fno);							/* Read a directory item */
-FRESULT f_findfirst (FF_DIR* dp, FILINFO* fno, const TCHAR* path, const TCHAR* pattern);	/* Find first file */
-FRESULT f_findnext (FF_DIR* dp, FILINFO* fno);							/* Find next file */
+FRESULT f_opendir (FDIR* dp, const TCHAR* path);						/* Open a directory */
+FRESULT f_closedir (FDIR* dp);										/* Close an open directory */
+FRESULT f_readdir (FDIR* dp, FILINFO* fno);							/* Read a directory item */
+FRESULT f_findfirst (FDIR* dp, FILINFO* fno, const TCHAR* path, const TCHAR* pattern);	/* Find first file */
+FRESULT f_findnext (FDIR* dp, FILINFO* fno);							/* Find next file */
 FRESULT f_mkdir (const TCHAR* path);								/* Create a sub directory */
 FRESULT f_unlink (const TCHAR* path);								/* Delete an existing file or directory */
 FRESULT f_rename (const TCHAR* path_old, const TCHAR* path_new);	/* Rename/Move a file or directory */
