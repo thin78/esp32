@@ -150,7 +150,7 @@ static int f_scan(char *path)
 {
     int l;
     char *fn;
-    FF_DIR dir;
+    FDIR dir;
     FILINFO finfo;
     FRESULT fr;
     char npath[MAXL];
@@ -185,7 +185,21 @@ static int f_scan(char *path)
 
 static void fs_test()
 {
-    f_scan(WPATH); 
+    char *path="/web/index.html";
+    //f_scan(WPATH); 
+    
+    FILE *f=fopen(path, "rb");
+    if(!f) {
+        printf("%s open failed\n", path);
+    }
+    
+    char buf[100];
+    int r = fread(buf,1,100,f);
+    printf("fread %d\n", r);
+    buf[100] = 0;
+    printf("___html: %s\n", buf);
+    
+    fclose(f);
 }
 
 
