@@ -137,6 +137,8 @@ esp_err_t esp_vfs_fat_rawflash_mount(const char* base_path,
     const esp_vfs_fat_mount_config_t* mount_config)
 {
     esp_err_t result = ESP_OK;
+    const size_t workbuf_size = 4096;
+    void *workbuf = NULL;
 
     const esp_partition_t *data_partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA,
             ESP_PARTITION_SUBTYPE_DATA_FAT, partition_label);
@@ -173,8 +175,29 @@ esp_err_t esp_vfs_fat_rawflash_mount(const char* base_path,
     FRESULT fresult = f_mount(fs, drv, 1);
     if (fresult != FR_OK) {
         ESP_LOGW(TAG, "f_mount failed (%d)", fresult);
-        result = ESP_FAIL;
-        goto fail;
+        if (!(fresult == FR_NO_FILESYSTEM && mount_config->format_if_mount_failed)) {
+            result = ESP_FAIL;
+            goto fail;
+        }
+        
+        ESP_LOGW(TAG, "f_mkfs now...");
+        workbuf = malloc(workbuf_size);
+        if (workbuf == NULL) {
+            result = ESP_ERR_NO_MEM;
+            goto fail;
+        }
+        size_t alloc_unit_size = esp_vfs_fat_get_allocation_unit_size(
+                CONFIG_WL_SECTOR_SIZE,
+                mount_config->allocation_unit_size);
+        ESP_LOGI(TAG, "Formatting FATFS partition, allocation unit size=%d", alloc_unit_size);
+        fresult = f_mkfs(drv, FM_ANY | FM_SFD, alloc_unit_size, workbuf, workbuf_size);
+        if (fresult != FR_OK) {
+            result = ESP_FAIL;
+            ESP_LOGE(TAG, "f_mkfs failed (%d)", fresult);
+            goto fail;
+        }
+        free(workbuf);
+        workbuf = NULL;
     }
     return ESP_OK;
 
