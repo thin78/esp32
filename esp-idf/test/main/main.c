@@ -34,7 +34,7 @@
 #define TO_PASS "Kobble2014"
 
 #define LABEL  "web"
-#define WPATH  "/"//"/web"
+#define WPATH  "/web"//"/web"
 
 static wl_handle_t wh;
 static EventGroupHandle_t egrp;
@@ -152,10 +152,12 @@ static int f_scan(char *path)
     char *fn;
     FF_DIR dir;
     FILINFO finfo;
+    FRESULT fr;
     char npath[MAXL];
     
     fn = finfo.fname;
-    if (f_opendir(&dir,(const TCHAR*)path)==FR_OK) {
+    fr = f_opendir(&dir,(const TCHAR*)path);
+    if (fr==FR_OK) {
         while(f_readdir(&dir, &finfo)==FR_OK) {
             if (!fn[0]) break;  
             if (DOTDIR(fn)) continue;
@@ -175,7 +177,7 @@ static int f_scan(char *path)
         f_closedir(&dir);
     }
     else {
-        printf("opendir %s failed\n", path);
+        printf("opendir %s failed, %d\n", path, fr);
     }    
     
     return 0;
@@ -185,42 +187,6 @@ static void fs_test()
 {
     f_scan(WPATH); 
 }
-
-static void spiffs_init(const char *path, const char *label)
-{
-    const esp_vfs_spiffs_conf_t cfg = {
-        .base_path = path,
-        .partition_label = label,
-        .max_files = 100,
-        .format_if_mount_failed = false
-    };
-    
-    esp_err_t err = esp_vfs_spiffs_register(&cfg);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "failed to mount spiffs (%s)", esp_err_to_name(err));
-        return;
-    }
-    
-    //for test
-    const char *fpath="/web/index.html";
-    FILE* fd = fopen(fpath, "rb");
-    if (fd == NULL) {
-        ESP_LOGE(TAG, "Failed to open file!");
-        return;
-    }
-
-    char buf[200];
-    size_t rl=0;
-    rl = fread(buf, 100, 1, fd);
-    buf[100]=0;
-    printf("___rl: %d\n", rl);
-    for(int i=0; i<20; i++) {
-        printf("___buf[%d]: 0x%02x\n", i, buf[i]);
-    }
-    
-    fclose(fd);
-}
-
 
 
 #if 0
@@ -253,37 +219,46 @@ static void get_info()
 }
 #endif
 
-static void fs_init()
+static int fs_init()
 {
     const esp_vfs_fat_mount_config_t cfg = {
         .max_files = 100,
         .format_if_mount_failed = false,
-        //.allocation_unit_size = 512
+        //.allocation_unit_size = 4096
     };
     
     esp_err_t err = esp_vfs_fat_rawflash_mount(WPATH, LABEL, &cfg);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "failed to mount fatfs (%s)", esp_err_to_name(err));
-        return;
+        return -1;
     }
+    
+    return 0;
 }
 
-static void fs_free()
+static int fs_free()
 {
-    esp_vfs_fat_rawflash_unmount(WPATH, LABEL);
+    if(esp_vfs_fat_rawflash_unmount(WPATH, LABEL)==ESP_OK) {
+        return 0;
+    }
+    
+    return -1;
 }
 
 
 
 void app_main(void)
 {
+    int r;
+    
     uint32_t bs,bits = BIT0 | BIT1;
     
     nvs_init();
     net_init();
-    fs_init();
-    
-    fs_test();
+    r = fs_init();
+    if(r==0) {
+        fs_test();
+    }
     
     xTaskCreate(http_task, "http_task", 9000, NULL, uxTaskPriorityGet(NULL), NULL);
     xTaskCreate(ws_task,   "ws_task",   9000, NULL, uxTaskPriorityGet(NULL), NULL);
@@ -300,6 +275,8 @@ void app_main(void)
         vTaskDelay(2000/portTICK_PERIOD_MS);
         #endif
     }
+    
+    fs_free();
 }
 
 
