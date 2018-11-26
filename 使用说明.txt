@@ -1,0 +1,46 @@
+1、开发环境安装
+   a、下载https://dl.espressif.com/dl/esp32_win32_msys2_environment_and_toolchain-20180110.zip，解压到c盘根目录
+       运行C:\msys32\mingw32.exe，该窗口就是工作环境窗口，所有工作都可以通过它进行，包括下面的软件安装
+   b、安装nodejs：pacman -S mingw-w64-i686-nodejs
+   c、安装uglifyjs mpm install uglify-js g
+   d、安装git: https://gitforwindows.org/
+      安装tortoisegit: https://tortoisegit.org/
+      tortoisegit功能类似tortoisesvn
+
+
+2、下载源代码：https://github.com/thin78/esp32.git
+    目录结构：
+    esp-idf：官方源码包
+    esp-idf/components: 官方组件库
+    esp-idf/examples:   例程，api调用可以参考
+    esp-idf/test：      我写的代码，包括外设调用，http线程，ws线程，基本跑通，还剩大量细节需要完成
+    说明：cd esp-idf/test，进入到test目录，敲入make回车即可开始编译，编译完成后，在test/build目录下有3个文件：
+          build/bootloader/bootloader.bin
+          build/partitions_singleapp.bin
+	  build/test.bin
+
+	  esp-idf/components/partition_table/partitions_singleapp.csv 该文件内是分区信息，可以看看
+    目前flash的程序布局如下：
+          0~0x0fff          	保留
+          0x1000~0x1dfff     	bootloader
+          0x1e000~0x1efff     	分区信息表
+          0x20000~0x2efff	nvs(参数存储区)
+          0x2f000~0x2feff       phy(各种phy参数存储区)
+          0x30000~0x1fffff   	系统程序
+
+官方教程：
+    官方教程https://docs.espressif.com/projects/esp-idf/zh_CN/stable/
+
+    
+    tools：工具目录
+    tools/flash:         烧写工具
+    烧写工具会使用串口，所有烧写时，必须断开其它程序对串口的占用，调试串口的波特率为115200
+    板子上有cp2102的usb转串口芯片，使用时，需要安装驱动：
+    https://www.silabs.com/products/development-tools/software/usb-to-uart-bridge-vcp-drivers
+
+    wdev：web代码
+    wdev/mkfs:		 自己编写的一个生成fat镜像工具
+    wdev/web：           web源代码，最难的是数据动态处理部分，基本框架已有
+    wdev/web/tools：     进入该目录下，执行./mk即可在该目录生成web.bin的fat镜像文件，该文件可以烧写到设备中去
+    wdev/ws：            测试用，一个websocket服务程序，可以在pc上调试ok好再放入设备调试
+    
