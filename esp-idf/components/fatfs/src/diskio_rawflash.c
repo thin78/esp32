@@ -39,7 +39,7 @@ DRESULT ff_raw_read (BYTE pdrv, BYTE *buff, DWORD sector, UINT count)
     ESP_LOGV(TAG, "ff_raw_read - pdrv=%i, sector=%i, count=%in", (unsigned int)pdrv, (unsigned int)sector, (unsigned int)count);
     const esp_partition_t* part = ff_raw_handles[pdrv];
     assert(part);
-    esp_err_t err = esp_partition_read(part, sector * SPI_FLASH_SEC_SIZE, buff, count * SPI_FLASH_SEC_SIZE);
+    esp_err_t err = esp_partition_read(part, sector * SSIZE, buff, count * SSIZE);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "esp_partition_read failed (0x%x)", err);
         return RES_ERROR;
@@ -52,7 +52,7 @@ DRESULT ff_raw_write (BYTE pdrv, const BYTE *buff, DWORD sector, UINT count)
 {
     const esp_partition_t* part = ff_raw_handles[pdrv];
     assert(part);
-    esp_err_t err = esp_partition_write(part, sector * SPI_FLASH_SEC_SIZE, buff, count * SPI_FLASH_SEC_SIZE);
+    esp_err_t err = esp_partition_write(part, sector * SSIZE, buff, count * SSIZE);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "esp_partition_read failed (0x%x)", err);
         return RES_ERROR;
@@ -69,12 +69,10 @@ DRESULT ff_raw_ioctl (BYTE pdrv, BYTE cmd, void *buff)
         case CTRL_SYNC:
             return RES_OK;
         case GET_SECTOR_COUNT:
-            *((DWORD *) buff) = part->size / SPI_FLASH_SEC_SIZE;
-            printf("___ GET_SECTOR_COUNT: %d %d %d\n", part->size, SPI_FLASH_SEC_SIZE, part->size / SPI_FLASH_SEC_SIZE);
+            *((DWORD *) buff) = part->size / SSIZE;
             return RES_OK;
         case GET_SECTOR_SIZE:
-            *((WORD *) buff) = SPI_FLASH_SEC_SIZE;
-            printf("___ GET_SECTOR_SIZE: %d\n", SPI_FLASH_SEC_SIZE);
+            *((WORD *) buff) = SSIZE;
             return RES_OK;
         case GET_BLOCK_SIZE:
             return RES_ERROR;

@@ -578,7 +578,7 @@ endef
 
 # filter/subst in expression ensures all submodule paths begin with $(IDF_PATH), and then strips that prefix
 # so the argument is suitable for use with 'git submodule' commands
-$(foreach submodule,$(subst $(IDF_PATH)/,,$(filter $(IDF_PATH)/%,$(COMPONENT_SUBMODULES))),$(eval $(call GenerateSubmoduleCheckTarget,$(submodule))))
+#$(foreach submodule,$(subst $(IDF_PATH)/,,$(filter $(IDF_PATH)/%,$(COMPONENT_SUBMODULES))),$(eval $(call GenerateSubmoduleCheckTarget,$(submodule))))
 endif # End check for .gitmodules existence
 
 

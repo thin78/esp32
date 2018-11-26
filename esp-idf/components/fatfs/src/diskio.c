@@ -17,7 +17,7 @@
 #include "esp_spi_flash.h"
 
 
-#define USE_SELF
+//#define USE_SELF
 
 static ff_diskio_impl_t * s_impls[FF_VOLUMES] = { NULL };
 
@@ -82,8 +82,7 @@ DRESULT ff_disk_read (BYTE pdrv, BYTE* buff, DWORD sector, UINT count)
     
     #ifdef USE_SELF
     r = spi_flash_read(OFFSET+sector*SSIZE,buff,count*SSIZE);
-    printf("spiflash r: %d\n", r);
-    return RES_OK;
+    return (r==ESP_OK)?RES_OK:RES_ERROR;
     #else
     return s_impls[pdrv]->read(pdrv, buff, sector, count);
     #endif
@@ -94,8 +93,7 @@ DRESULT ff_disk_write (BYTE pdrv, const BYTE* buff, DWORD sector, UINT count)
     
     #ifdef USE_SELF
     r = spi_flash_write(OFFSET+sector*SSIZE,buff,count*SSIZE);
-    printf("spiflash w: %d\n", r);
-    return RES_OK;
+    return (r==ESP_OK)?RES_OK:RES_ERROR;
     #else
     return s_impls[pdrv]->write(pdrv, buff, sector, count);
     #endif
